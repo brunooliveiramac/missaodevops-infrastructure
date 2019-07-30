@@ -1,0 +1,54 @@
+ - Instalar helm: 
+$ curl -LO https://git.io/get_helm.sh
+$ chmod 700 get_helm.sh
+$ ./get_helm.sh
+ 
+ - Executar o deploy do tiller account que dara permissões para o helm gerenciar os deploys subsequentes/roolbacks etc...
+ - Após isso, instalar o helm associando a role criada: helm init --service-account tiller
+
+
+ - Caso não funcione, fazer na mão sam3rd4: kubectl patch deployment tiller-deploy -n kube-system --patch "$(cat associate-helm-account.yaml)"
+                                            kubectl get deploy tiller-deploy -n kube-system -o yaml | grep tiller
+
+
+
+- Chart Museum: Repositorio de versionamento dos charts    
+   
+   helm install --name helm --namespace devops -f chartmuseum-conf.yaml stable/chartmuseum 
+
+   - helm-push, capaz de enviar um chart a um repositório:
+     helm plugin install https://github.com/chartmuseum/helm-push
+
+   - Adicionar nosso repositório (ChartMuseum): 
+     helm repo add questcode http://$(kubectl get nodes --namespace devops -o jsonpath="{.items[0].status.addresses[0].address}"):30010
+
+
+    helm lint backend-scm/
+    helm push backend-scm/ questcode
+
+    helm lint backend-user/
+    helm push backend-user/ questcode
+
+    helm lint frontend/
+    helm push frontend/ questcode
+
+    helm repo update
+
+
+
+ - UP and Running via HELM and ChartMuseum:
+
+    helm install questcode/frontend --namespace staging --name staging-frontend
+    helm install questcode/backend-scm --namespace staging --name staging-backend-scm
+    helm install questcode/backend-user --namespace staging --name staging-backend-user    
+
+    helm upgrade staging-backend-user questcode/backend-user --set image.tag=0.1.3: Rolling update, não há indisponibilidade.
+    helm rollback staging-backend-user 1
+
+    helm status e helm history 
+    helm rollback <RELEASE> <REVISION>
+    helm delete --purge <NAME>
+
+
+
+    mongodb://test-user:test-password@172.16.56.161:27017/test-database
